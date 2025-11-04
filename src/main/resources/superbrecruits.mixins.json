@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.logic.superbrecruits.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "superbrecruits.refmap.json",
+  "mixins": [
+    "MixinAbstractRecruitEntity",
+    "MixinBowman",
+    "MixinMessageMountEntity",
+    "MixinRecruitMountEntity",
+    "MixinVehicleEntity",
+    "VehicleEntityAccessor"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
