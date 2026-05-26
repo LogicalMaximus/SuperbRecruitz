@@ -1,11 +1,11 @@
 package com.logic.superbrecruits.entity.ai;
 
 import com.atsuishio.superbwarfare.entity.vehicle.MortarEntity;
-import com.atsuishio.superbwarfare.item.common.ammo.MortarShell;
-import com.logic.superbrecruits.mixin.VehicleEntityAccessor;
+import com.atsuishio.superbwarfare.item.projectile.MortarShellItem;
 import com.talhanation.recruits.entities.AbstractRecruitEntity;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.Entity;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.item.ItemStack;
@@ -36,7 +36,7 @@ public class MortarAttackGoal<T extends AbstractRecruitEntity> extends Goal {
     public boolean canUse() {
         LivingEntity livingentity = this.recruit.getTarget();
 
-        if (livingentity != null && livingentity.isAlive() && this.recruit.getMainHandItem().getItem() instanceof MortarShell && this.recruit.getVehicle() == null) {
+        if (livingentity != null && livingentity.isAlive() && this.recruit.getMainHandItem().getItem() instanceof MortarShellItem && this.recruit.getVehicle() == null) {
             this.target = livingentity;
 
             boolean canAttack = this.recruit.canAttack(this.target);
@@ -53,7 +53,7 @@ public class MortarAttackGoal<T extends AbstractRecruitEntity> extends Goal {
         if(!this.recruit.isDeadOrDying()) {
             ItemStack itemStack = this.recruit.getMainHandItem();
 
-            if(itemStack.getItem() instanceof MortarShell) {
+            if(itemStack.getItem() instanceof MortarShellItem) {
                 itemStack.getOrCreateTag().remove("TargetX");
                 itemStack.getOrCreateTag().remove("TargetY");
                 itemStack.getOrCreateTag().remove("TargetZ");
@@ -65,7 +65,9 @@ public class MortarAttackGoal<T extends AbstractRecruitEntity> extends Goal {
 
     @Override
     public void tick() {
-        if(nearestMortar == null) {
+        //this.mergeItemstacks();
+
+        if(nearestMortar == null || nearestMortar.isRemoved()) {
             List<MortarEntity> mortarEntities = this.recruit.level().getEntitiesOfClass(MortarEntity.class, this.recruit.getBoundingBox().inflate(32));
 
             if(!mortarEntities.isEmpty()) {
@@ -80,21 +82,21 @@ public class MortarAttackGoal<T extends AbstractRecruitEntity> extends Goal {
             if(this.recruit.distanceTo(nearestMortar) <= MAX_MORTAR_DISTANCE) {
                 ItemStack stack = this.recruit.getMainHandItem();
 
-                if(stack.getItem() instanceof MortarShell) {
+                if(stack.getItem() instanceof MortarShellItem) {
                     stack.getOrCreateTag().putDouble("TargetX", this.random.nextDouble(this.target.getX() - SPREAD, this.target.getX() + SPREAD));
                     stack.getOrCreateTag().putDouble("TargetY", this.target.getY());
                     stack.getOrCreateTag().putDouble("TargetZ", this.random.nextDouble(this.target.getZ() - SPREAD, this.target.getZ() + SPREAD));
 
-                    nearestMortar.setTarget(stack, this.recruit);
+                    nearestMortar.setTarget(stack, this.recruit, "Main");
 
                     this.recruit.swing(InteractionHand.MAIN_HAND);
 
-                    if (stack.getItem() instanceof MortarShell  && (Integer) nearestMortar.getEntityData().get(MortarEntity.FIRE_TIME) == 0 && (((VehicleEntityAccessor)nearestMortar).getItems().get(0)).isEmpty()) {
-                        ((VehicleEntityAccessor)nearestMortar).getItems().set(0, stack.copyWithCount(1));
+                    if (stack.getItem() instanceof MortarShellItem  && (Integer) nearestMortar.getEntityData().get(MortarEntity.FIRE_TIME) == 0 && ((nearestMortar).getItems().get(0)).isEmpty()) {
+                        nearestMortar.getItems().set(0, stack.copyWithCount(1));
 
                         stack.shrink(1);
 
-                        nearestMortar.fire(this.recruit);
+                        nearestMortar.vehicleShoot(this.recruit, "Main");
                     }
                 }
             }
@@ -104,5 +106,38 @@ public class MortarAttackGoal<T extends AbstractRecruitEntity> extends Goal {
         }
 
         super.tick();
+    }
+
+    private void mergeItemstacks() {
+        if(this.recruit != null) {
+            ItemStack mainHandItem = this.recruit.getMainHandItem();
+
+            if(mainHandItem.isEmpty() && this.recruit.getInventory().getItem(5).isEmpty()) {
+                int gunSlot = -1;
+                ItemStack itemStack = null;
+
+                for(int i = 0; i < this.recruit.getInventory().getContainerSize(); i++) {
+                    SimpleContainer inventory = this.recruit.getInventory();
+
+                    ItemStack itemInSlot = inventory.getItem(i);
+
+                    if(itemInSlot.getItem() instanceof MortarShellItem mortarShell) {
+                        itemStack = itemInSlot;
+
+                        gunSlot = i;
+
+                        break;
+                    }
+                }
+
+                if(itemStack != null && gunSlot != -1) {
+                    ItemStack beforeItem = this.recruit.inventory.getItem(5);
+                    this.recruit.getInventory().setItem(gunSlot, beforeItem);
+
+                    this.recruit.getInventory().setItem(5, itemStack);
+                    this.recruit.setItemSlot(EquipmentSlot.MAINHAND, itemStack);
+                }
+            }
+        }
     }
 }

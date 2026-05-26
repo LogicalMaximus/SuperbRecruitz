@@ -1,10 +1,9 @@
 package com.logic.superbrecruits.mixin;
 
-import com.atsuishio.superbwarfare.entity.vehicle.base.MobileVehicleEntity;
 import com.atsuishio.superbwarfare.entity.vehicle.base.VehicleEntity;
 import com.talhanation.recruits.config.RecruitsServerConfig;
 import com.talhanation.recruits.entities.AbstractRecruitEntity;
-import com.talhanation.recruits.entities.ai.RecruitMountEntity;
+import com.talhanation.recruits.entities.ai.RecruitMountEntityGoal;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
@@ -14,7 +13,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.List;
 
-@Mixin(RecruitMountEntity.class)
+@Mixin(RecruitMountEntityGoal.class)
 public abstract class MixinRecruitMountEntity extends Goal {
     @Shadow(remap = false)
     private AbstractRecruitEntity recruit;

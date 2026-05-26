@@ -1,6 +1,6 @@
 package com.logic.superbrecruits.mixin;
 
-import com.atsuishio.superbwarfare.entity.vehicle.base.MobileVehicleEntity;
+import com.atsuishio.superbwarfare.entity.vehicle.base.VehicleEntity;
 import com.talhanation.recruits.CommandEvents;
 import com.talhanation.recruits.config.RecruitsServerConfig;
 import com.talhanation.recruits.entities.AbstractRecruitEntity;
@@ -27,7 +27,7 @@ public abstract class MixinMessageMountEntity implements Message<MessageMountEnt
     private UUID uuid;
 
     @Shadow(remap = false)
-    private int group;
+    private UUID group;
 
     /**
      * @author
@@ -35,8 +35,8 @@ public abstract class MixinMessageMountEntity implements Message<MessageMountEnt
      */
     @Overwrite(remap = false)
     public void executeServerSide(NetworkEvent.Context context) {
-        ServerPlayer player = (ServerPlayer) Objects.requireNonNull(context.getSender());
-        List<Entity> entityList = player.getCommandSenderWorld().getEntitiesOfClass(Entity.class, player.getBoundingBox().inflate((double)100.0F), (mount) -> mount.getUUID().equals(this.target) && ((List) RecruitsServerConfig.MountWhiteList.get()).contains(mount.getEncodeId()) || mount.getUUID().equals(this.target) && mount instanceof MobileVehicleEntity);
+        ServerPlayer player = (ServerPlayer)Objects.requireNonNull(context.getSender());
+        List<Entity> entityList = player.getCommandSenderWorld().getEntitiesOfClass(Entity.class, player.getBoundingBox().inflate((double)100.0F), (mount) -> mount.getUUID().equals(this.target) && ((List)RecruitsServerConfig.MountWhiteList.get()).contains(mount.getEncodeId()) || mount.getUUID().equals(this.target) && mount instanceof VehicleEntity);
         if (!entityList.isEmpty()) {
             player.getCommandSenderWorld().getEntitiesOfClass(AbstractRecruitEntity.class, player.getBoundingBox().inflate((double)100.0F), (recruit) -> recruit.isEffectedByCommand(this.uuid, this.group)).forEach((recruit) -> CommandEvents.onMountButton(this.uuid, recruit, this.target, this.group));
         }

@@ -1,6 +1,6 @@
 package com.logic.superbrecruits.entity.ai.navigation;
 
-import com.atsuishio.superbwarfare.entity.vehicle.base.MobileVehicleEntity;
+import com.atsuishio.superbwarfare.entity.vehicle.base.VehicleEntity;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
@@ -31,12 +31,12 @@ public class GroundVehicleNodeEvaluator extends NodeEvaluator {
     private final Long2ObjectMap<BlockPathTypes> pathTypesByPosCache = new Long2ObjectOpenHashMap<>();
     private final Object2BooleanMap<AABB> collisionCache = new Object2BooleanOpenHashMap<>();
 
-    private MobileVehicleEntity vehicle;
+    private VehicleEntity vehicle;
 
     public void prepare(PathNavigationRegion p_77620_, Mob p_77621_) {
         super.prepare(p_77620_, p_77621_);
 
-        if(p_77621_.getVehicle() instanceof MobileVehicleEntity vehicle) {
+        if(p_77621_.getVehicle() instanceof VehicleEntity vehicle) {
             this.vehicle = vehicle;
 
             this.entityWidth = Mth.floor(vehicle.getBbWidth() + 1.0F);

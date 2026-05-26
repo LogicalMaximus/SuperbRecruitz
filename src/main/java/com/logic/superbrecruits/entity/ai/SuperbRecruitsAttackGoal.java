@@ -1,13 +1,18 @@
 package com.logic.superbrecruits.entity.ai;
 
+import com.atsuishio.superbwarfare.data.gun.FireMode;
 import com.atsuishio.superbwarfare.data.gun.GunData;
 import com.atsuishio.superbwarfare.data.gun.GunProp;
+import com.atsuishio.superbwarfare.data.mob_guns.MobGunData;
 import com.atsuishio.superbwarfare.event.GunEventHandler;
 import com.atsuishio.superbwarfare.item.gun.GunItem;
+import com.atsuishio.superbwarfare.tools.MillisTimer;
 import com.logic.superbrecruits.bridge.IAmmoConsumer;
 import com.talhanation.recruits.config.RecruitsServerConfig;
 import com.talhanation.recruits.entities.AbstractRecruitEntity;
+import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.item.ItemStack;
@@ -20,11 +25,11 @@ public class SuperbRecruitsAttackGoal<T extends AbstractRecruitEntity> extends G
     private final T recruit;
     private final double speedModifier;
     private LivingEntity target;
-    private int attackTime = -1;
-    private int seeTime;
     private final double stopRange;
     private boolean consumeArrows;
-    private GunItem weapon;
+    private MobGunData mobGunData;
+    private int seeTime = -1;
+    private final MillisTimer shootTimer = new MillisTimer();
 
     public SuperbRecruitsAttackGoal(T mob, double speedModifier, double stopRange) {
         this.recruit = mob;
@@ -36,9 +41,6 @@ public class SuperbRecruitsAttackGoal<T extends AbstractRecruitEntity> extends G
 
     @Override
     public boolean canUse() {
-        if(RecruitsServerConfig.RangedRecruitsNeedArrowsToShoot.get() && !((IAmmoConsumer)recruit).superbrecruits$hasAmmo())
-            return false;
-
         LivingEntity livingentity = this.recruit.getTarget();
 
         if (livingentity != null && livingentity.isAlive() && isHoldingGun(this.recruit)) {
@@ -57,8 +59,6 @@ public class SuperbRecruitsAttackGoal<T extends AbstractRecruitEntity> extends G
                 ItemStack stack = this.recruit.getMainHandItem();
 
                 if(stack.getItem() instanceof GunItem gunItem) {
-                    this.weapon = gunItem;
-
                     return (double)distance >= this.stopRange && canTackMovePos && notNeedsToGetFood && canAttack && notPassive && shouldRanged;
                 } else {
                     return false;
@@ -67,22 +67,6 @@ public class SuperbRecruitsAttackGoal<T extends AbstractRecruitEntity> extends G
         } else {
             return false;
         }
-    }
-
-    private boolean hasEnoughAmmoToShoot(ItemStack weapon) {
-        if(weapon.getItem() instanceof GunItem) {
-            return GunData.from(weapon).hasEnoughAmmoToShoot(this.recruit);
-        }
-
-        return !this.consumeArrows;
-    }
-
-    private boolean hasAmmo(ItemStack weapon) {
-        if(weapon.getItem() instanceof GunItem) {
-            return GunData.from(weapon).hasBackupAmmo(this.recruit);
-        }
-
-        return !this.consumeArrows;
     }
 
     private boolean isHoldingGun(T recruit) {
@@ -106,7 +90,7 @@ public class SuperbRecruitsAttackGoal<T extends AbstractRecruitEntity> extends G
         this.recruit.stopUsingItem();
     }
 
-    /*
+
     @Override
     public void tick() {
         if (this.target != null && this.target.isAlive()) {
@@ -116,62 +100,11 @@ public class SuperbRecruitsAttackGoal<T extends AbstractRecruitEntity> extends G
             boolean isTooFar = distance >= (double)4500.0F;
             boolean inRange = !isFar;
             boolean canSee = this.recruit.getSensing().hasLineOfSight(this.target);
-            if (canSee) {
-                ++this.seeTime;
-            } else {
-
-
-                this.seeTime = 0;
-            }
-
-            if (isTooFar) {
-                this.recruit.setTarget((LivingEntity)null);
-                this.stop();
-                return;
-            }
-
-            if (this.recruit.getShouldFollow() && this.recruit.getOwner() != null) {
-                this.handleFollow(this.recruit.getOwner(), inRange, isFar, isClose);
-            } else if (this.recruit.getShouldHoldPos() && this.recruit.getHoldPos() != null) {
-                this.handleHoldPos(this.recruit.getHoldPos(), inRange, isFar, isClose);
-            } else {
-                this.handleWander(inRange, isFar, isClose);
-            }
-
-            this.recruit.lookAt(EntityAnchorArgument.Anchor.EYES, target.getEyePosition());
-
-            ItemStack itemStack = this.recruit.getMainHandItem();
-
-            if (itemStack.getItem() instanceof GunItem) {
-                GunData gunData = GunData.from(itemStack);
-
-                if(RecruitsServerConfig.RangedRecruitsNeedArrowsToShoot.get() && !this.hasEnoughAmmoToShoot(itemStack)) {
-                    GunEventHandler.tryStartReload(this.recruit, gunData);
-                }
-                
-                handleGunBolt(this.recruit, itemStack);
-                if (type == 0) {
-                    data.item.onFireKeyPress(data, player, zoom);
-                } else if (type == 1) {
-                    data.item.onFireKeyRelease(data, player, power, zoom);
-                }
-
-                float f = Mth.sqrt((float)distance) / this.weapon.attackRadius();
-                float attackIntervalMax = this.weapon.getAttackCooldown() + RecruitsWariumConfig.ADDITIONAL_SHOOT_DELAY.get();
-                float attackIntervalMin = this.weapon.getAttackCooldown();
-
-                this.attackTime = Mth.floor(f * (float)(attackIntervalMax - attackIntervalMin) + (float)attackIntervalMin);
-            }
 
         }
 
-        --this.attackTime;
-
         super.tick();
     }
-
-
-     */
 
     private boolean canAttackMovePos() {
         LivingEntity target = this.recruit.getTarget();
@@ -225,14 +158,4 @@ public class SuperbRecruitsAttackGoal<T extends AbstractRecruitEntity> extends G
 
     }
 
-    private static void handleGunBolt(AbstractRecruitEntity recruit, ItemStack stack) {
-        if (stack.getItem() instanceof GunItem) {
-            GunData data = GunData.from(stack);
-            if ((Integer)data.get(GunProp.BOLT_ACTION_TIME) > 0 && data.hasEnoughAmmoToShoot(recruit) && data.bolt.actionTimer.get() == 0 && !data.reloading() && !data.charging() && data.bolt.needed.get()) {
-                data.startBolt();
-                GunEventHandler.playGunBoltSounds(recruit, data);
-            }
-
-        }
-    }
 }

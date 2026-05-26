@@ -1,22 +1,29 @@
 package com.logic.superbrecruits.entity.ai;
 
-import com.atsuishio.superbwarfare.entity.vehicle.base.MobileVehicleEntity;
-import com.atsuishio.superbwarfare.entity.vehicle.base.WeaponVehicleEntity;
-import com.talhanation.recruits.config.RecruitsServerConfig;
+import com.atsuishio.superbwarfare.data.gun.GunData;
+import com.atsuishio.superbwarfare.entity.vehicle.base.ArtilleryEntity;
+import com.atsuishio.superbwarfare.entity.vehicle.base.VehicleEntity;
 import com.talhanation.recruits.entities.BowmanEntity;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.item.*;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.Random;
+
 public class VehicleStrategicFire extends Goal {
+    private static final double SPREAD = 6;
+
     private BlockPos pos;
     private BowmanEntity bowman;
-    private MobileVehicleEntity vehicle;
+    private VehicleEntity vehicle;
 
     private int weaponSlot;
+
+    private Random random = new Random();
 
     public VehicleStrategicFire(BowmanEntity bowman) {
         this.bowman = bowman;
@@ -25,7 +32,7 @@ public class VehicleStrategicFire extends Goal {
     public boolean canUse() {
         Item item = this.bowman.getMainHandItem().getItem();
 
-        if(this.bowman.getVehicle() instanceof MobileVehicleEntity vehicle) {
+        if(this.bowman.getVehicle() instanceof VehicleEntity vehicle) {
             this.vehicle = vehicle;
 
             if(this.vehicle.getFirstPassenger() == this.bowman) {
@@ -62,27 +69,43 @@ public class VehicleStrategicFire extends Goal {
 
         this.bowman.lookAt(EntityAnchorArgument.Anchor.EYES, vec3);
 
-        if(this.vehicle instanceof WeaponVehicleEntity weaponVehicleEntity) {
+        if(this.vehicle instanceof ArtilleryEntity entity) {
+            ItemStack stack = this.bowman.getMainHandItem();
+
+            stack.getOrCreateTag().putDouble("TargetX", this.random.nextDouble(this.bowman.getX() - SPREAD, this.bowman.getX() + SPREAD));
+            stack.getOrCreateTag().putDouble("TargetY", this.bowman.getY());
+            stack.getOrCreateTag().putDouble("TargetZ", this.random.nextDouble(this.bowman.getZ() - SPREAD, this.bowman.getZ() + SPREAD));
+
+            entity.setTarget(stack, this.bowman, "Main");
+
+            this.bowman.swing(InteractionHand.MAIN_HAND);
+
+            GunData main = this.vehicle.getGunData("Main");
+
+            if(vehicle.canShoot(this.bowman)) {
+                vehicle.vehicleShoot(this.bowman, "Main");
+            }
+        } else {
             int seatIndex = vehicle.getSeatIndex(this.bowman);
 
-            int length = weaponVehicleEntity.getAvailableWeapons(seatIndex).size();
+            int length = vehicle.getGunDataMap().size();
 
             if(weaponSlot < length) {
                 this.bowman.lookAt(EntityAnchorArgument.Anchor.EYES, vec3);
 
-                if(weaponVehicleEntity.hasWeapon(seatIndex) && weaponVehicleEntity.getWeaponIndex(seatIndex) != weaponSlot) {
-                    int currentAmmo = weaponVehicleEntity.getAmmoCount(this.bowman);
+                if(vehicle.hasWeapon(seatIndex) && vehicle.getWeaponIndex(seatIndex) != weaponSlot) {
+                    int currentAmmo = vehicle.getAmmoCount(this.bowman);
 
-                    weaponVehicleEntity.vehicleShoot(this.bowman, weaponSlot);
+                    vehicle.vehicleShoot(this.bowman, vehicle.getGunName(seatIndex, weaponSlot));
 
-                    if(currentAmmo != weaponVehicleEntity.getAmmoCount(this.bowman)) {
-                        weaponVehicleEntity.changeWeapon(seatIndex, weaponSlot, false);
+                    if(currentAmmo != vehicle.getAmmoCount(this.bowman)) {
+                        vehicle.changeWeapon(seatIndex, weaponSlot, false);
 
                         weaponSlot++;
                     }
                 }
                 else {
-                    weaponVehicleEntity.changeWeapon(seatIndex, weaponSlot, false);
+                    vehicle.changeWeapon(seatIndex, weaponSlot, false);
 
                     weaponSlot++;
                 }

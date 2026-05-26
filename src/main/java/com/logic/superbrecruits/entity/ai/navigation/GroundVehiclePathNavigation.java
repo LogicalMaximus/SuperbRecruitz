@@ -1,6 +1,6 @@
 package com.logic.superbrecruits.entity.ai.navigation;
 
-import com.atsuishio.superbwarfare.entity.vehicle.base.MobileVehicleEntity;
+import com.atsuishio.superbwarfare.entity.vehicle.base.VehicleEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -16,9 +16,9 @@ public class GroundVehiclePathNavigation extends VehiclePathNavigation {
 
     private boolean avoidSun = false;
 
-    private final MobileVehicleEntity vehicle;
+    private final VehicleEntity vehicle;
 
-    public GroundVehiclePathNavigation(MobileVehicleEntity vehicle, Mob p_26448_, Level p_26449_) {
+    public GroundVehiclePathNavigation(VehicleEntity vehicle, Mob p_26448_, Level p_26449_) {
         super(p_26448_, p_26449_, vehicle);
 
         this.vehicle = vehicle;

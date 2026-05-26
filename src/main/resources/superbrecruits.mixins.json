@@ -9,8 +9,7 @@
     "MixinBowman",
     "MixinMessageMountEntity",
     "MixinRecruitMountEntity",
-    "MixinVehicleEntity",
-    "VehicleEntityAccessor"
+    "MixinVehicleEntity"
   ],
   "client": [
   ],

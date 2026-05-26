@@ -1,6 +1,6 @@
 package com.logic.superbrecruits.entity.ai.navigation;
 
-import com.atsuishio.superbwarfare.entity.vehicle.base.MobileVehicleEntity;
+import com.atsuishio.superbwarfare.entity.vehicle.base.VehicleEntity;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -29,7 +29,7 @@ public abstract class VehiclePathNavigation {
     private static final float STUCK_THRESHOLD_DISTANCE_FACTOR = 0.25F;
     protected final Mob mob;
     protected final Level level;
-    protected final MobileVehicleEntity vehicle;
+    protected final VehicleEntity vehicle;
     @Nullable
     protected Path path;
     protected double speedModifier;
@@ -51,7 +51,7 @@ public abstract class VehiclePathNavigation {
     private final PathFinder pathFinder;
     private boolean isStuck;
 
-    public VehiclePathNavigation(Mob p_26515_, Level p_26516_, MobileVehicleEntity vehicle) {
+    public VehiclePathNavigation(Mob p_26515_, Level p_26516_, VehicleEntity vehicle) {
         this.mob = p_26515_;
         this.level = p_26516_;
         this.vehicle = vehicle;

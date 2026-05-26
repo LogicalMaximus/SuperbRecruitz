@@ -1,12 +1,12 @@
 package com.logic.superbrecruits.entity.ai;
 
 import com.atsuishio.superbwarfare.entity.vehicle.MortarEntity;
-import com.atsuishio.superbwarfare.entity.vehicle.base.MobileVehicleEntity;
-import com.atsuishio.superbwarfare.item.common.ammo.MortarShell;
-import com.logic.superbrecruits.mixin.VehicleEntityAccessor;
+import com.atsuishio.superbwarfare.item.projectile.MortarShellItem;
 import com.talhanation.recruits.entities.BowmanEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -34,7 +34,7 @@ public class MortarStrategicFireGoal extends Goal {
     public boolean canUse() {
         Item item = this.bowman.getMainHandItem().getItem();
 
-        if (this.bowman.getTarget() == null && this.bowman.getShouldStrategicFire()  && this.bowman.getFollowState() != 5 && !this.bowman.getShouldMount() && item instanceof MortarShell) {
+        if (this.bowman.getTarget() == null && this.bowman.getShouldStrategicFire()  && this.bowman.getFollowState() != 5 && !this.bowman.getShouldMount() && item instanceof MortarShellItem) {
             return true;
         } else {
             this.pos = null;
@@ -53,7 +53,7 @@ public class MortarStrategicFireGoal extends Goal {
         if(!this.bowman.isDeadOrDying()) {
             ItemStack itemStack = this.bowman.getMainHandItem();
 
-            if(itemStack.getItem() instanceof MortarShell) {
+            if(itemStack.getItem() instanceof MortarShellItem) {
                 itemStack.getOrCreateTag().remove("TargetX");
                 itemStack.getOrCreateTag().remove("TargetY");
                 itemStack.getOrCreateTag().remove("TargetZ");
@@ -70,7 +70,9 @@ public class MortarStrategicFireGoal extends Goal {
 
         if(this.pos == null)return;
 
-        if(nearestMortar == null) {
+        //this.mergeItemstacks();
+
+        if(nearestMortar == null || nearestMortar.isRemoved()) {
             List<MortarEntity> mortarEntities = this.bowman.level().getEntitiesOfClass(MortarEntity.class, this.bowman.getBoundingBox().inflate(32));
 
             if(!mortarEntities.isEmpty()) {
@@ -85,21 +87,21 @@ public class MortarStrategicFireGoal extends Goal {
             if(this.bowman.distanceTo(nearestMortar) <= MAX_MORTAR_DISTANCE) {
                 ItemStack stack = this.bowman.getMainHandItem();
 
-                if(stack.getItem() instanceof MortarShell) {
+                if(stack.getItem() instanceof MortarShellItem) {
                     stack.getOrCreateTag().putDouble("TargetX", this.random.nextDouble(this.pos.getX() - SPREAD, this.pos.getX() + SPREAD));
                     stack.getOrCreateTag().putDouble("TargetY", this.pos.getY());
                     stack.getOrCreateTag().putDouble("TargetZ", this.random.nextDouble(this.pos.getZ() - SPREAD, this.pos.getZ() + SPREAD));
 
-                    nearestMortar.setTarget(stack, this.bowman);
+                    nearestMortar.setTarget(stack, this.bowman, "Main");
 
                     this.bowman.swing(InteractionHand.MAIN_HAND);
 
-                    if (stack.getItem() instanceof MortarShell  && (Integer) nearestMortar.getEntityData().get(MortarEntity.FIRE_TIME) == 0 && (((VehicleEntityAccessor)nearestMortar).getItems().get(0)).isEmpty()) {
-                        ((VehicleEntityAccessor)nearestMortar).getItems().set(0, stack.copyWithCount(1));
+                    if (stack.getItem() instanceof MortarShellItem && (Integer) nearestMortar.getEntityData().get(MortarEntity.FIRE_TIME) == 0 && ((nearestMortar).getItems().get(0)).isEmpty()) {
+                        nearestMortar.getItems().set(0, stack.copyWithCount(1));
 
                         stack.shrink(1);
 
-                        nearestMortar.fire(this.bowman);
+                        nearestMortar.vehicleShoot(this.bowman, "Main");
                     }
                 }
             }
@@ -111,6 +113,37 @@ public class MortarStrategicFireGoal extends Goal {
         super.tick();
     }
 
+    private void mergeItemstacks() {
+        if(this.bowman != null) {
+            ItemStack mainHandItem = this.bowman.getMainHandItem();
 
+            if(mainHandItem.isEmpty() && this.bowman.getInventory().getItem(5).isEmpty()) {
+                int gunSlot = -1;
+                ItemStack itemStack = null;
+
+                for(int i = 0; i < this.bowman.getInventory().getContainerSize(); i++) {
+                    SimpleContainer inventory = this.bowman.getInventory();
+
+                    ItemStack itemInSlot = inventory.getItem(i);
+
+                    if(itemInSlot.getItem() instanceof MortarShellItem mortarShell) {
+                        itemStack = itemInSlot;
+
+                        gunSlot = i;
+
+                        break;
+                    }
+                }
+
+                if(itemStack != null && gunSlot != -1) {
+                    ItemStack beforeItem = this.bowman.inventory.getItem(5);
+                    this.bowman.getInventory().setItem(gunSlot, beforeItem);
+
+                    this.bowman.getInventory().setItem(5, itemStack);
+                    this.bowman.setItemSlot(EquipmentSlot.MAINHAND, itemStack);
+                }
+            }
+        }
+    }
 
 }

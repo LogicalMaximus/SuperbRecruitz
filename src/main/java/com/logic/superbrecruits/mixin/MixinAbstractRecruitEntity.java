@@ -3,6 +3,7 @@ package com.logic.superbrecruits.mixin;
 import com.logic.superbrecruits.bridge.ILookerEntity;
 import com.logic.superbrecruits.entity.ai.DriveVehicleGoal;
 import com.logic.superbrecruits.entity.ai.MortarAttackGoal;
+import com.logic.superbrecruits.entity.ai.SuperbRecruitsAttackGoal;
 import com.logic.superbrecruits.entity.ai.VehicleShootGoal;
 import com.talhanation.recruits.entities.AbstractInventoryEntity;
 import com.talhanation.recruits.entities.AbstractRecruitEntity;
@@ -31,6 +32,7 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
         this.targetSelector.addGoal(2, new VehicleShootGoal<>(((AbstractRecruitEntity) (Object) this)));
         this.targetSelector.addGoal(3, new DriveVehicleGoal<>(((AbstractRecruitEntity) (Object) this)));
         this.targetSelector.addGoal(3, new MortarAttackGoal<>(((AbstractRecruitEntity) (Object) this)));
+        this.targetSelector.addGoal(3, new SuperbRecruitsAttackGoal<>(((AbstractRecruitEntity) (Object) this), 1.0F, 3));
     }
 
     @Override
